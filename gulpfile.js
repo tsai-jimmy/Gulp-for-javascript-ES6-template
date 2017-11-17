@@ -1,5 +1,5 @@
 "use strict";
-var gulp = require('gulp'),
+const gulp = require('gulp'),
     path = require('path'),
     fs = require("fs"),
     concat = require('gulp-concat'),
@@ -15,35 +15,55 @@ var gulp = require('gulp'),
     gutil = require('gulp-util'),
     browserify = require('browserify'),
     babelify = require('babelify'),
-    watchify = require('watchify')
+    watchify = require('watchify'),
+    Proxy = require('gulp-api-proxy');
 
 /* Server無法重新整理時改 port 試試看 */
 gulp.task('connect',()=>{
 	connect.server({
 		root: './',
 		port: 3000,
-		livereload: true
+		livereload: true,
+        middleware: (connect, opt)=> {
+            opt.route = '/server';
+            opt.context = '192.168.1.186/server';
+            var proxy = new Proxy(opt);
+            return [proxy];
+        }
 	});
 });
 
+
+/* html */
+gulp.task('html', () => { 
+    return gulp.src('./*.html')
+    .pipe(connect.reload())
+})
+
 /* js */
-gulp.task('js', function() {
-	 browserify({ debug: true })
-         .transform(babelify, {
-            presets: ["env", "stage-2"],
-            plugins: [
-                "babel-plugin-transform-class-properties",
-                "transform-async-to-generator"
-            ]
-         })
-		.require('js/es6/app.js', { entry: true })
-		.bundle()
-        .on('error', gutil.log)
-        .pipe(source('app.js')) 
-        .pipe(gulp.dest('js'))
+gulp.task('js', () => {
+    let files = [
+        'app.js',
+    ];
+    files.map((obj, idx) => {
+        browserify({ debug: true })
+        .transform(babelify, {
+           presets: ["env", "stage-2"],
+           plugins: [
+               "babel-plugin-transform-class-properties",
+               "transform-async-to-generator"
+           ]
+        })
+       .require(`js/es6/${obj}`, { entry: true })
+       .bundle()
+       .on('error', gutil.log)
+       .pipe(source(obj)) 
+       .pipe(gulp.dest('./js'))
+       .pipe(connect.reload())
+    })
+    
 });
 
- 
 /*Sass*/
 gulp.task('sass',()=> {
 	return gulp.src('sass/**/*.scss')
@@ -69,17 +89,19 @@ gulp.task('images', ()=>{
         require('imagemin-jpegtran')({quality:70}),
         require('imagemin-gifsicle')({optimizationLevel:2}),
     ]))
-    .pipe(gulp.dest(tar));
+    .pipe(gulp.dest(tar))
+	.pipe(connect.reload())
 });
 
 
 
 /*Watch*/
 gulp.task('watch',()=> {
+    gulp.watch('./*.html', ['html']);
     gulp.watch('sass/**/*.scss', ['sass']);
     gulp.watch('images/**/*.{jpg,png,gif,ico}', ['images']);
     gulp.watch('js/es6/**/*.js', ['js']);
 });
 
 
-gulp.task('default', ['connect', 'js', 'sass', 'images' , 'watch']);
+gulp.task('default', ['connect','html' , 'js', 'sass', 'images' , 'watch']);
