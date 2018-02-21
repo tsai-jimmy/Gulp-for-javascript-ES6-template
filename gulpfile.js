@@ -54,7 +54,7 @@ gulp.task('js', () => {
                "transform-async-to-generator"
            ]
         })
-       .require(`js/es6/${obj}`, { entry: true })
+       .require(`es6/${obj}`, { entry: true })
        .bundle()
        .on('error', gutil.log)
        .pipe(source(obj)) 
@@ -99,8 +99,8 @@ gulp.task('images', ()=>{
 gulp.task('watch',()=> {
     gulp.watch('./*.html', ['html']);
     gulp.watch('sass/**/*.scss', ['sass']);
-    gulp.watch('images/**/*.{jpg,png,gif,ico}', ['images']);
-    gulp.watch('js/es6/**/*.js', ['js']);
+    gulp.watch('images-src/**/*.{jpg,png,gif,ico}', ['images']);
+    gulp.watch('es6/**/*.js', ['js']);
 });
 
 
